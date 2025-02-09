@@ -1,0 +1,479 @@
+#include"raylib.h"
+#include<ctime>
+#include<cstdlib>
+
+#define screenwidth 1000
+#define screenheight 600
+const int  max_enemies = 6;
+bool bulletshoot = false;
+bool fliped = false;
+bool flipedshoot = false;
+bool changeHappen = false;
+bool gameOver = false;
+bool levelUpScreen = false;
+
+
+struct enemy {
+	float x;
+	int y;
+	int wid;
+	int height;
+	bool isAlive;
+
+
+};
+int timer[max_enemies]{ 0 };
+enemy Enemies[max_enemies];
+Texture2D enemytexture[max_enemies];
+
+struct bullet
+{
+	int x;
+	int y;
+	int radius;
+};
+
+int main()
+{
+	float enemyspeed = 1;
+	int bulletspeed = 2;
+	int enemies = 3;
+	int backgroundmovement = 1;
+	float jumpspeed=1;
+
+	SetTargetFPS(60);
+	
+	int level = 1;
+	int Score = 0, Health = 100;
+
+	bullet b{};
+	b.radius = 4;
+	b.x = screenwidth / 5 + 30;
+	b.y = screenheight - 100;
+
+
+	InitWindow(screenwidth, screenheight, "Metal Slug");
+
+	Texture2D start = LoadTexture("Metal Slug.png");
+	start.height = screenheight;
+	start.width = screenwidth;
+
+	Texture2D start2 = LoadTexture("Metal Slug Advance.png");
+	start2.height = screenheight;
+	start2.width = screenwidth;
+
+	Texture2D levels = LoadTexture("Level.png");
+	levels.height = screenheight;
+	levels.width = screenwidth;
+
+
+	Texture2D B1 = LoadTexture("B1.png");
+	B1.height = screenheight;
+	B1.width = screenwidth;
+
+
+	Texture2D B2 = LoadTexture("B2.png");
+	B2.height = screenheight;
+	B2.width = screenwidth;
+
+	Texture2D bg12 = LoadTexture("bg12.png");
+	bg12.height = screenheight;
+	bg12.width = screenwidth;
+
+	Texture2D bg22 = LoadTexture("bg22.png");
+	bg22.height = screenheight;
+	bg22.width = screenwidth;
+
+	Texture2D bg13 = LoadTexture("bg13.png");
+	bg13.height = screenheight;
+	bg13.width = screenwidth;
+
+	Texture2D bg23 = LoadTexture("bg23.png");
+	bg23.height = screenheight;
+	bg23.width = screenwidth;
+
+	Texture2D player = LoadTexture("pngegg.png");
+	player.height = 100;
+	player.width = 80;
+
+	Texture2D flip = LoadTexture("fliped.png");
+	flip.height = 100;
+	flip.width = 80;
+
+	Texture2D bullet = LoadTexture("bulletshot.png");
+	bullet.height = 110;
+	bullet.width = 100;
+
+	Texture2D bulletfliped = LoadTexture("bulletshotfliped.png");
+	bulletfliped.height = 110;
+	bulletfliped.width = 100;
+
+	Texture2D bulletAnimation = LoadTexture("Bullet Animation.png");
+	bulletAnimation.height = 50;
+	bulletAnimation.width = 50;
+
+
+	enemytexture[0] = LoadTexture("enemy.png");
+	enemytexture[0].width = 80;
+	enemytexture[0].height = 100;
+	enemytexture[1] = LoadTexture("enemy1.png");
+	enemytexture[1].width = 80;
+	enemytexture[1].height = 100;
+	enemytexture[2] = LoadTexture("enemy2.png");
+	enemytexture[2].width = 80;
+	enemytexture[2].height = 100;
+	enemytexture[3] = LoadTexture("enemy3.png");
+	enemytexture[3].width = 80;
+	enemytexture[3].height = 100;
+	enemytexture[4] = LoadTexture("enemy4.png");
+	enemytexture[4].width = 80;
+	enemytexture[4].height = 100;
+	enemytexture[5] = LoadTexture("enemy5.png");
+	enemytexture[5].width = 80;
+	enemytexture[5].height = 100;
+
+
+	for (int i = 0; i < max_enemies; i++) {
+		Enemies[i].x = screenwidth + (i * 200);
+		Enemies[i].y = screenheight - 130;
+		Enemies[i].wid = enemytexture[i].width;
+		Enemies[i].height = enemytexture[i].height;
+		Enemies[i].isAlive = true;
+	}
+
+
+
+	int bg1 = 0;
+	int bg2 = screenwidth;
+
+	float jump = 0;
+
+	InitAudioDevice();
+	Sound metalslug = LoadSound("metalslug.wav");
+	Sound starta = LoadSound("startsound.wav");
+
+	PlaySound(metalslug);
+	PlaySound(starta);
+	while (!WindowShouldClose())
+	{
+		BeginDrawing();
+		
+		DrawTexture(start, 0, 0, WHITE);
+		
+		EndDrawing();
+		
+		if (IsKeyPressed(KEY_ENTER))
+		{
+			break;
+		}
+	}
+	UnloadSound(metalslug);
+	UnloadSound(starta);
+	CloseAudioDevice();
+
+	InitAudioDevice();
+	Sound bulletSound = LoadSound("Gunshot.wav");
+	Sound explosion = LoadSound("blast.wav");
+	Sound LevelUp = LoadSound("LevelUp.wav");
+	Sound advance = LoadSound("advance.wav");
+	
+	while (!WindowShouldClose())
+	{
+		
+		
+		BeginDrawing();
+		if (gameOver)
+		{
+			ClearBackground(BLACK);
+			DrawText("Game Over", screenwidth / 2 - 100, screenheight / 2, 40, RED);
+			DrawText(TextFormat("Final Score: %d", Score), screenwidth / 2 - 100, screenheight / 2 + 50, 30, WHITE);
+			EndDrawing();
+			continue;
+		}
+		if (levelUpScreen and level<3) 
+		{			
+			ClearBackground(BLACK);
+			DrawTexture(levels, 0, 0, WHITE);
+			DrawText("Press ENTER to continue", screenwidth / 2 - 100, screenheight - 50, 20, WHITE);
+			PlaySound(LevelUp);
+			if (IsKeyPressed(KEY_ENTER)) 
+			{ 
+				if (enemies > 0)
+					enemies--;
+				
+				bg1 = 0;
+				bg2 = screenwidth;
+				level += 1;
+				Score++;
+
+				enemyspeed+=2;
+				bulletspeed+=3;
+				backgroundmovement++;
+				jumpspeed += 0.5;
+
+				ClearBackground(WHITE);
+				levelUpScreen = false; 	
+				
+			}
+			EndDrawing();
+			continue;
+		}
+		else
+		{ 
+			if (levelUpScreen)
+			{
+				ClearBackground(BLACK);
+				DrawTexture(start2, 0, 0, WHITE);
+				PlaySound(advance);
+				if (IsKeyPressed(KEY_ENTER))
+				{
+					
+					if (enemies > 0)
+						enemies--;
+					
+					bg1 = 0;
+					bg2 = screenwidth;
+					level += 1;
+					Score++;
+					ClearBackground(WHITE);
+
+					enemyspeed+=2;
+					bulletspeed += 3;
+					backgroundmovement++;
+					jumpspeed += 0.5;
+
+					levelUpScreen = false;
+
+				}
+				EndDrawing();
+				continue;
+			}
+		}
+
+		if (level == 1)
+		{
+			DrawTexture(B1, bg1, 0, WHITE);
+			DrawTexture(B2, bg2, 0, WHITE);
+		}
+		else if (level == 2)
+		{
+			DrawTexture(bg12, bg1, 0, WHITE);
+			DrawTexture(bg22, bg2, 0, WHITE);
+		}
+		else if(level==3)
+		{
+			DrawTexture(bg13, bg1, 0, WHITE);
+			DrawTexture(bg23, bg2, 0, WHITE);
+		}
+		else
+		{ 
+			DrawTexture(B1, bg1, 0, WHITE);
+			DrawTexture(B2, bg2, 0, WHITE);
+		}
+
+		for (int i = 0; i < max_enemies-enemies; i++)
+		{
+			if (Enemies[i].isAlive)
+			{
+				DrawTexture(enemytexture[i], Enemies[i].x, Enemies[i].y, WHITE);
+				Enemies[i].x -= enemyspeed;
+
+				srand(time(0));
+				if (Enemies[i].x < -Enemies[i].wid)
+				{
+					Enemies[i].x = screenwidth + ((rand() % 300) + 50);
+				}
+			}
+			for (int i = 0; i < max_enemies-enemies; i++)
+			{
+				if (Enemies[i].isAlive &&
+					Enemies[i].x + Enemies[i].wid >= screenwidth / 5 &&
+					Enemies[i].x <= screenwidth / 5 + player.width &&
+					Enemies[i].y + Enemies[i].height >= screenheight - 145 - jump &&
+					Enemies[i].y <= screenheight - 45 - jump)
+				{
+					Health -= 25;
+
+					if (Health <= 0)
+					{
+						gameOver = true;
+						break;
+					}
+
+					Enemies[i].x = screenwidth + ((rand() % 300) + 50);
+				}
+		
+			}
+
+		}
+
+
+		for (int i = 0; i < max_enemies-enemies; i++)
+		{
+			if (Enemies[i].isAlive)
+			{
+
+				if (bulletshoot && (b.x + b.radius > Enemies[i].x && b.x - b.radius < Enemies[i].x + Enemies[i].wid) &&
+					(b.y + b.radius > Enemies[i].y && b.y - b.radius < Enemies[i].y + Enemies[i].height)) {
+					Enemies[i].isAlive = false;
+					bulletshoot = false;
+					b.x = screenwidth / 5 + 30;
+					b.y = screenheight - 100 - jump;
+
+					PlaySound(explosion);
+
+					Score++;
+				}
+				if (flipedshoot && (b.x + b.radius > Enemies[i].x && b.x - b.radius < Enemies[i].x + Enemies[i].wid) &&
+					(b.y + b.radius > Enemies[i].y && b.y - b.radius < Enemies[i].y + Enemies[i].height))
+				{
+					Enemies[i].isAlive = false;
+					flipedshoot = false;
+					b.x = screenwidth / 5 + 30;
+					b.y = screenheight - 100 - jump;
+
+					PlaySound(explosion);
+
+					Score++;
+				}
+
+			}
+		}
+
+
+		for (int i = 0; i < max_enemies-enemies; i++) {
+			timer[i]++;
+			if (!Enemies[i].isAlive && timer[i] > 700 * i)
+			{
+				srand(time(0));
+				Enemies[i].x = screenwidth + rand() % 1000;
+				Enemies[i].isAlive = true;
+				timer[i] = 0;
+
+			}
+		}
+
+
+
+
+
+		if (!bulletshoot && !fliped)
+		{
+			DrawTexture(player, screenwidth / 5, screenheight - 145 - jump, WHITE);
+		}
+		if (bulletshoot && !fliped)
+		{
+			DrawTexture(bullet, screenwidth / 5, screenheight - 160 - jump, RAYWHITE);
+		}
+		if (!flipedshoot && fliped)
+		{
+			DrawTexture(flip, screenwidth / 5, screenheight - 145 - jump, WHITE);
+		}
+		if (flipedshoot && fliped)
+		{
+			DrawTexture(bulletfliped, screenwidth / 5, screenheight - 160 - jump, RAYWHITE);
+		}
+
+
+
+		if (IsKeyDown(KEY_RIGHT))
+		{
+			bg1-=backgroundmovement;
+			bg2-backgroundmovement;
+			fliped = false;
+		}
+		if (IsKeyDown(KEY_LEFT))
+		{
+			bg1+=backgroundmovement;
+			bg2+=backgroundmovement;
+
+			fliped = true;
+		}
+		if (IsKeyPressed(KEY_SPACE) && !fliped && !flipedshoot)
+		{
+			
+			bulletshoot = true;
+			flipedshoot = false;
+			PlaySound(bulletSound);
+		}
+		if (IsKeyPressed(KEY_SPACE) && fliped && !bulletshoot)
+		{
+		
+			flipedshoot = true;
+			bulletshoot = false;
+			PlaySound(bulletSound);
+		}
+
+		if (IsKeyPressed(KEY_UP))
+		{
+			jump += 150;
+		}
+
+		if (bg1 <= -screenwidth)
+		{
+			bg1 = screenwidth;
+		}
+		else if (bg2 <= -screenwidth)
+		{
+			bg2 = screenwidth;
+		}
+		else if (bg1 >= screenwidth)
+		{
+			bg1 = -screenwidth;
+		}
+		else if (bg2 >= screenwidth)
+		{
+			bg2 = -screenwidth;
+		}
+
+
+		if (bulletshoot)
+		{
+			DrawTexture(bulletAnimation, b.x - 20, b.y - 25, WHITE);
+			DrawCircle(b.x, b.y, b.radius, GOLD);
+			b.x += bulletspeed;
+
+		}
+		if (flipedshoot)
+		{
+			DrawTexture(bulletAnimation, b.x - 20, b.y - 25, WHITE);
+			DrawCircle(b.x, b.y, b.radius, GOLD);
+			b.x -= bulletspeed;
+		}
+
+		if (b.x > screenwidth)
+		{
+			bulletshoot = false;
+			b.x = screenwidth / 5 + 30;
+			b.y = screenheight - 100 - jump;
+		}
+		if (b.x < 0)
+		{
+			flipedshoot = false;
+			b.x = screenwidth / 5 + 30;
+			b.y = screenheight - 100 - jump;
+		}
+		if (jump > 0)
+		{
+			jump -= jumpspeed;
+		}
+
+		if (Score != 0 && Score % 10 == 0 && !levelUpScreen and level<=3) 
+		{
+			levelUpScreen = true;
+				
+			
+		}
+
+		DrawText(TextFormat("Score: %d", Score), 10, 10, 20, BLACK);
+		DrawText(TextFormat("Health: %d", Health), screenwidth - 150, 10, 20, BLACK);
+		DrawText(TextFormat("level: %d", level), screenwidth +150, 10, 20, BLACK);
+
+		EndDrawing();
+		
+
+	}
+	UnloadSound(bulletSound);
+	
+	CloseAudioDevice();
+}
